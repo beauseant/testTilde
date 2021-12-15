@@ -17,8 +17,16 @@ def readJson (f):
 
 
 def loadFile (file):
+	listAbstract = list ()
+	try:
+		with open( file ) as f:
+			data = list(filter (lambda articulo : articulo['paperAbstract'] != '', readJson (f)[:3000]))
+			listAbstract = random.sample (data, argus.abstract)
+			print ('finish with %f' % file)
+	except:
+		print ('error leyendo %s' % file)
 
-	pass
+	return listAbstract
 
 def translate (articulo ):
 	return len(re.findall(r'\w+', articulo['paperAbstract']))
@@ -82,14 +90,11 @@ if __name__ == "__main__":
 
 		listAbstract = list()
 
-		for file in selectScopusFiles:
+		with multiprocessing.Pool(processes= int(argus.threads)) as pool:
+			listAbstract = pool.starmap(loadFile, zip(selectScopusFiles))
 
-			try:
-				with open( file ) as f:
-					data = list(filter (lambda articulo : articulo['paperAbstract'] != '', readJson (f)[:3000]))
-					listAbstract =  listAbstract + random.sample (data, argus.abstract)
-			except:
-				print ('error leyendo %s' % file)
+		import ipdb ; ipdb.set_trace()
+
 
 		numWords = map (lambda articulo : len(re.findall(r'\w+', articulo['paperAbstract'])), listAbstract)
 		print ('número de articulos procesados: %s' % len (listAbstract))
@@ -97,7 +102,7 @@ if __name__ == "__main__":
 
 
 	with multiprocessing.Pool(processes= int(argus.threads)) as pool:
-		results = pool.starmap(launch, zip(listAbstract))
+		results = pool.starmap(translate, zip(listAbstract))
 
 	import ipdb ; ipdb.set_trace()
 
