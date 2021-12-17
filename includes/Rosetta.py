@@ -1,9 +1,4 @@
-import glob
-import argparse
-import random
 import json
-import re
-import multiprocessing
 from urllib.request import Request, urlopen
 import urllib.parse
 
@@ -42,9 +37,9 @@ class Rosetta:
 			for d in data['System']:
 				if d['Metadata'][0]['Value'] == self._translate:
 					self._langid = d['ID']
-					print ('identificador de idioma %s ' % self._langid)
+					#print ('identificador de idioma %s ' % self._langid)
 					self._tranUrl = self._tranUrl.replace ('__CORPUSID__', self._langid)
-					print (self._tranUrl)
+					#print (self._tranUrl)
 		else:
 			print ('no se ha podido cargar la API, %s' % content.status)
 
