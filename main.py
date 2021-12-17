@@ -35,8 +35,8 @@ def loadFile (file):
 
     return listAbstract
 
-def translate (articulo ):
-    myR = Rosetta (token = 'u-fc6f1588-4dc0-4358-aa48-106749f327af', translate = 'English - Spanish (NMT) Lynx')
+def translate (articulo, myR):
+    
     
     if myR.connect()[0] == 200:
         text = articulo['paperAbstract']
@@ -83,9 +83,12 @@ if __name__ == "__main__":
         print ('número de palabras totales: %s' % sum(numWords))
 
 
+    myR = Rosetta (token = 'u-fc6f1588-4dc0-4358-aa48-106749f327af', translate = 'English - Spanish (NMT) Lynx')
+    listRossetas = [myR]* argus.threads
+
     start_time = time.time()
     with multiprocessing.Pool(processes= int(argus.threads)) as pool:
-        results = pool.starmap(translate, zip(listAbstract))
+        results = pool.starmap(translate, zip(listAbstract, listRossetas))
     end_time = time.time()
 
     for i, res in enumerate (results):
@@ -101,6 +104,7 @@ if __name__ == "__main__":
         file = argus.output + '/resumen.txt' 
         with open( file, 'w') as f:
             f.write (str(end_time - start_time))
+    print ('Tiempo total %s segundos' %  (end_time - start_time))
 
 
 
