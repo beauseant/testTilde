@@ -36,13 +36,8 @@ def loadFile (file):
     return listAbstract
 
 def translate (articulo, myR):
-    
-    
-    if myR.connect()[0] == 200:
-        text = articulo['paperAbstract']
-        textTrans = myR.translate (text)
-    else:
-        print ('error')
+    text = articulo['paperAbstract']
+    textTrans = myR.translate (text)
 
     return [articulo['paperAbstract'], textTrans[1], len(re.findall(r'\w+', articulo['paperAbstract']))]
 
@@ -58,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('-n','--numero', help='Número de archivos a procesar', required=True, type=int)
     parser.add_argument('-na','--abstract', help='Número de abstract de cada archivo a procesar', required=True, type=int)
     parser.add_argument('-th','--threads', required=True, type=int, help='hilos de ejecución a lanzar,1 secuencial')
-    parser.add_argument('-o','--output', required=True, type=str, help='directorio de salida')
+    parser.add_argument('-o','--output', required=False, type=str, help='directorio de salida')
     argus = parser.parse_args()
 
     
@@ -72,38 +67,53 @@ if __name__ == "__main__":
 
 
         listAbstract = list()
+    
 
         with multiprocessing.Pool(processes= int(argus.threads)) as pool:
             listAbstract = pool.starmap(loadFile, zip(selectScopusFiles))
         listAbstract = [item for sublist in listAbstract for item in sublist]
 
-
+        
         numWords = map (lambda articulo : len(re.findall(r'\w+', articulo['paperAbstract'])), listAbstract)
         print ('número de articulos procesados: %s' % len (listAbstract))
         print ('número de palabras totales: %s' % sum(numWords))
 
+    try:
+        with open('token','r') as tokenfile:
+            tokenAPI = tokenfile.read().strip()
+    except:
+        print ('error cargando el archivo de token, imposible continuar. Cree un archivo llamado token con la clave de acceso')
 
-    myR = Rosetta (token = 'u-fc6f1588-4dc0-4358-aa48-106749f327af', translate = 'English - Spanish (NMT) Lynx')
-    listRossetas = [myR]* argus.threads
+    myR = Rosetta (token = tokenAPI, translate = 'English - Spanish (NMT) Lynx')
+    if myR.connect()[0] != 200:
+        print ('error')
+        exit()
+
+    listRossetas = [myR]* len(listAbstract) 
 
     start_time = time.time()
-    with multiprocessing.Pool(processes= int(argus.threads)) as pool:
-        results = pool.starmap(translate, zip(listAbstract, listRossetas))
+    if argus.threads != 1:
+        with multiprocessing.Pool(processes= int(argus.threads)) as pool:
+            results = pool.starmap(translate, zip(listAbstract, listRossetas))
+    else:
+        results = list()
+        for abstract in listAbstract:
+            results.append (translate (abstract, myR))
+
     end_time = time.time()
 
-    for i, res in enumerate (results):
-        file = argus.output + '/' + str(i)
+    if argus.output:
+        file = argus.output 
         with open( file, 'w') as f:
-            f.write (res[0])
-            f.write('\n ---------------------------------------- \n')
-            f.write (res[1])
-            f.write('\n ---------------------------------------- \n')
-            f.write (str(res[2]))
-
-        
-        file = argus.output + '/resumen.txt' 
-        with open( file, 'w') as f:
+            for i, res in enumerate (results):
+                f.write (res[0])
+                f.write('\n ---------------------------------------- \n')
+                f.write (res[1])
+                f.write('\n ---------------------------------------- \n')
+                f.write (str(res[2]))
             f.write (str(end_time - start_time))
+
+
     print ('Tiempo total %s segundos' %  (end_time - start_time))
 
 
